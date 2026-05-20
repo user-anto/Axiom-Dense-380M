@@ -15,6 +15,10 @@ Pretraining a 380M parameter Language Model on an RTX 4070
   <img src="https://img.shields.io/badge/Tokenizer-cl100k__base-green?style=for-the-badge" alt="Tokenizer">
 </p>
 
+<p align="center">
+  <a href="https://huggingface.co/user-anto/Axiom-Dense-380M-Base">https://huggingface.co/user-anto/Axiom-Dense-380M-Base</a>
+</p>
+
 <br>
 
 ## Axiom
