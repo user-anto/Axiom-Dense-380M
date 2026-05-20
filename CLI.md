@@ -1,4 +1,4 @@
-# MiniLM CLI Arguments
+# Axiom CLI Arguments
 
 ## `train.py`
 
@@ -16,21 +16,17 @@ Notes:
 - Training metrics are written every `TrainConfig.metrics_interval` steps (default: 500) to `TrainConfig.metrics_csv_path` (default: `train_metrics.csv`).
 - Eval metrics are written every `TrainConfig.eval_interval` steps (default: 500) to `TrainConfig.eval_csv_path` (default: `eval.csv`).
 
-## `quantize.py`
-
-- `--ckpt PATH` (required): Input `.pt` checkpoint to quantize.
-- `--out DIR`: Output directory for quantized AWQ model. Default: `models/MiniLM-awq`.
-
 ## `cli.py`
 
-- `--model DIR`: Path to quantized model directory. Default: `models/MiniLM-awq`.
+- `--ckpt PATH`: Checkpoint path (`.pt`). If omitted, latest checkpoint from `--ckpt-dir` is used.
+- `--ckpt-dir DIR`: Directory to search for latest checkpoint. Default: `checkpoints`.
 - `--prompt TEXT`: Single non-interactive prompt. If omitted, runs interactive chat mode.
 - `--system TEXT`: System instruction prepended to chat prompt.
-- `--max-tokens N`: Max new tokens to generate. Default: `512`.
-- `--temperature FLOAT`: Sampling temperature. Default: `0.7`.
+- `--max-tokens N`: Max new tokens to generate. Default: `256`.
+- `--temperature FLOAT`: Sampling temperature. Default: `0.8`.
 - `--top-p FLOAT`: Nucleus sampling threshold. Default: `0.9`.
-- `--top-k N`: Top-k cutoff for sampling. Default: `50`.
 - `--rep-penalty FLOAT`: Repetition penalty. Default: `1.1`.
+- `--no-repeat-ngram-size N`: Block repeated n-grams of size `N`. Default: `3`.
 
 ## `test.py`
 

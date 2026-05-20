@@ -5,3 +5,6 @@ data
 hf_export
 imp_ckpts
 .env
+upload.py
+axiom_logo.png
+example_README.md
