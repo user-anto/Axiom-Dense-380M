@@ -1,0 +1,7 @@
+__pycache__
+.venv
+checkpoints
+data
+hf_export
+imp_ckpts
+.env
