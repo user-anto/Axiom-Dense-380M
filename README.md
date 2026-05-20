@@ -110,7 +110,7 @@ These metrics are from internal validation on the project split and should be tr
 ├── train_metrics.csv   # Training telemetry history
 ├── eval.csv            # Eval loss/perplexity history
 ├── training_curves.png # Generated training visualization
-└── checkpoints/        # Training checkpoints
+└── imp_ckpts/        # Training checkpoints
 ```
 
 <br>
