@@ -4,6 +4,7 @@ import glob
 import inspect
 import os
 import re
+import time
 
 import torch
 
@@ -11,6 +12,8 @@ from config import ModelConfig
 from model import LLM
 from tokenizer import encode, decode
 
+
+SYSTEM_PROMPT = "You are a helpful and knowledgeable assistant. "
 
 def latest_ckpt(ckpt_dir: str) -> str | None:
     paths = glob.glob(os.path.join(ckpt_dir, "step_*.pt"))
@@ -36,12 +39,12 @@ def load_model(ckpt_path: str):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--ckpt", type=str, default=None)
+    p.add_argument("--ckpt", type=str, default="sft_checkpoints/step_0000641.pt")
     p.add_argument("--ckpt-dir", type=str, default="checkpoints")
-    p.add_argument("--max-new-tokens", type=int, default=128)
-    p.add_argument("--temperature", type=float, default=0.0)
-    p.add_argument("--top-p", type=float, default=0.9)
-    p.add_argument("--repetition-penalty", type=float, default=1.1)
+    p.add_argument("--max-new-tokens", type=int, default=1024)
+    p.add_argument("--temperature", type=float, default=0.2)
+    p.add_argument("--top-p", type=float, default=0.85)
+    p.add_argument("--repetition-penalty", type=float, default=1.15)
     p.add_argument("--no-repeat-ngram-size", type=int, default=3)
     p.add_argument("--stream", action="store_true", help="stream tokens as they are generated")
     args = p.parse_args()
@@ -64,11 +67,20 @@ def main():
             continue
         if user == "/quit":
             break
-        ids = encode(user)
+        chatml_prompt = f"<|im_start|>user\n{SYSTEM_PROMPT + user}<|im_end|>\n<|im_start|>assistant\n"
+        ids = encode(chatml_prompt)
+        
+        max_seq_len = model.cfg.max_seq_len
+        
+        if len(ids) > max_seq_len:
+            ids = ids[-max_seq_len:]
+            
         x = torch.tensor([ids], dtype=torch.long, device="cpu")
+        stop_tokens = {100265, 100257}
+
         with torch.no_grad():
             if args.stream:
-                print("bot> ", end="", flush=True)
+                print("Axiom> ", end="", flush=True)
                 y = x
                 prev_text = ""
                 for _ in range(args.max_new_tokens):
@@ -80,6 +92,10 @@ def main():
                         repetition_penalty=args.repetition_penalty,
                         no_repeat_ngram_size=args.no_repeat_ngram_size,
                     )
+                    last_tok = y[0, -1].item()
+                    if last_tok in stop_tokens:
+                        break
+                    
                     out = y[0, len(ids) :].tolist()
                     text = decode(out)
                     if text.startswith(prev_text):
@@ -87,7 +103,9 @@ def main():
                     else:
                         delta = text
                     if delta:
-                        print(delta, end="", flush=True)
+                        for char in delta:
+                            print(char, end="", flush=True)
+                            time.sleep(0.01)
                     prev_text = text
                 print()
             else:
@@ -100,7 +118,11 @@ def main():
                     no_repeat_ngram_size=args.no_repeat_ngram_size,
                 )
                 out = y[0, len(ids) :].tolist()
-                print("bot>", decode(out))
+                for i, tok in enumerate(out):
+                    if tok in stop_tokens:
+                        out = out[:i]
+                        break
+                print("Axiom>", decode(out))
 
 
 if __name__ == "__main__":

@@ -6,3 +6,9 @@ hf_export
 imp_ckpts
 .env
 upload.py
+docs.md
+sft_checkpoints
+delete.py
+sft_upload.py
+hf_sft_export
+model-card

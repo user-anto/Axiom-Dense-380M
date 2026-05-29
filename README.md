@@ -17,6 +17,7 @@ Pretraining a 380M parameter Language Model on an RTX 4070
 
 <p align="center">
   <a href="https://huggingface.co/user-anto/Axiom-Dense-380M-Base">https://huggingface.co/user-anto/Axiom-Dense-380M-Base</a>
+  <a href="https://huggingface.co/user-anto/Axiom-Dense-380M-Instruct">https://huggingface.co/user-anto/Axiom-Dense-380M-Instruct</a>
 </p>
 
 <br>
@@ -54,14 +55,16 @@ Parameter count: **385,849,344**.
 - Vocab size: **100,277**
 - Explicit EOS handling in data pipeline
 
-### 3) Data Pipeline (`data.py`)
+### 3) Pretraining Phase
+
+## Data Pipeline (`data.py`)
 
 - FineWeb-Edu dataset loading from local disk snapshot
 - Optional one-time packing to `uint32` binary token files
 - Deterministic train/val split via hash-based row assignment
 - Resumable packed token loader for efficient long runs
 
-### 4) Training System (`train.py`)
+## Training System (`train.py`)
 
 - Gradient accumulation for effective large-token steps on constrained VRAM
 - AdamW / AdamW8bit optimizer support
@@ -69,6 +72,20 @@ Parameter count: **385,849,344**.
 - Automatic checkpointing and interrupt-safe saves
 - Eval loop with perplexity tracking
 - Metric CSV outputs for training diagnostics
+
+### 4) Supervised Fine-tuning Phase
+
+## Data Pipeline (`sft_data.py`)
+
+- Uses Hugging Face `smoltalk` dataset for high-quality instruction following
+- Formats conversations into ChatML format (`<|im_start|>`, `<|im_end|>`)
+- **Right-pads** shorter conversations up to 1024 tokens to keep the `EOS` token effectively positioned within the context window
+- **Applies strict loss masking** over user prompts and padding tokens, forcing the model to solely optimize the assistant responses
+- Packs sequences into 1024-token contexts
+
+## Fine-tuning System (`sft_train.py`)
+
+- Similar to `train.py` but tuned for SFT dynamics
 
 ### 5) Inference (`chat.py`, `cli.py`)
 
@@ -78,9 +95,7 @@ Parameter count: **385,849,344**.
 
 <br>
 
-## Training Snapshot
-
-From the current configuration and logs:
+## Pre-training Snapshot
 
 - Target training tokens: **8.0B**
 - Effective tokens per optimizer step: **327,680**
@@ -90,10 +105,29 @@ From the current configuration and logs:
 - Final logged eval loss: **2.8972** (step 24,000)
 - Final logged eval perplexity: **18.1233** (step 24,000)
 
-These metrics are from internal validation on the project split and should be treated as developmental indicators, not benchmark SOTA claims.
+# Pre-training Curves
 
 <p align="center">
-  <img src="./training_curves.png" width="900" alt="Axiom training curves showing train loss, eval loss, and learning rate evolutions">
+  <img src="./figures/loss.png" width="32%" alt="Pretraining Loss">
+  <img src="./figures/lr.png" width="32%" alt="Pretraining Learning Rate">
+  <img src="./figures/perplexity.png" width="32%" alt="Pretraining Perplexity">
+</p>
+
+## Fine-tuning Snapshot
+
+- Target training tokens: **~0.2B** (smoltalk dataset)
+- Planned optimizer steps: **641**
+- Best recorded eval loss: **1.2640** (step 630)
+- Best recorded eval perplexity: **3.5397** (step 630)
+- Final logged eval loss: **1.2867** (step 640)
+- Final logged eval perplexity: **3.6210** (step 640)
+
+# Fine-tuning Curves
+
+<p align="center">
+  <img src="./figures/sft_loss.png" width="32%" alt="SFT Loss">
+  <img src="./figures/sft_lr.png" width="32%" alt="SFT Learning Rate">
+  <img src="./figures/sft_perplexity.png" width="32%" alt="SFT Perplexity">
 </p>
 
 <br>
@@ -106,15 +140,17 @@ These metrics are from internal validation on the project split and should be tr
 ├── config.py           # Model + training hyperparameters
 ├── data.py             # Dataset loading, packing, and loaders
 ├── train.py            # Main pretraining script
-├── tokenizer.py        # tiktoken wrapper and EOS helpers
-├── chat.py             # Interactive chat CLI (base model)
+├── sft_data.py         # Supervised fine-tuning data pipeline
+├── sft_train.py        # Supervised fine-tuning training loop
+├── tokenizer.py        # tiktoken wrapper (patches unused tokens for ChatML)
+├── chat.py             # Interactive chat CLI
 ├── cli.py              # Base-checkpoint inference CLI
-├── CLI.md              # CLI argument reference
 ├── vis.py              # Train/eval/lr curve plotting utility
+├── CLI.md              # CLI argument reference
+├── figures/            # Generated training visualizations
 ├── train_metrics.csv   # Training telemetry history
-├── eval.csv            # Eval loss/perplexity history
-├── training_curves.png # Generated training visualization
-└── imp_ckpts/        # Training checkpoints
+├── SFT_metrics.csv     # Fine-tuning telemetry history
+└── imp_ckpts/          # Training checkpoints
 ```
 
 <br>
@@ -139,13 +175,11 @@ python3 train.py
 ### Chat Locally
 
 ```bash
+# Base model
 python3 chat.py --ckpt checkpoints/step_0024414.pt --stream
-```
 
-### Visualize Training
-
-```bash
-python3 vis.py --train-csv train_metrics.csv --eval-csv eval.csv --out training_curves.png
+# Instruct model (uses SFT checkpoint by default)
+python3 chat.py --ckpt sft_checkpoints/step_0000641.pt
 ```
 
 <br>
@@ -159,7 +193,7 @@ python3 vis.py --train-csv train_metrics.csv --eval-csv eval.csv --out training_
 
 ## Hugging Face Usage
 
-Model:
+Base Model:
 
 ```python
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -169,18 +203,30 @@ tok = AutoTokenizer.from_pretrained(repo, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(repo, trust_remote_code=True)
 ```
 
+Instruct Model:
+
+```python
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+repo = "user-anto/Axiom-Dense-380M-Instruct"
+tok = AutoTokenizer.from_pretrained(repo, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(repo, trust_remote_code=True)
+```
+
 <br>
 
 ## Design Decisions and Tradeoffs
 
 - **Why 380M scale?** Big enough to surface real pretraining dynamics, small enough to iterate independently.
-- **Why packed token binaries?** Better throughput, lower tokenization overhead during long runs.
+- **Why packed token binaries?** Bypasses standard PyTorch `IterableDataset` Python overhead. Loading pre-compiled `uint32` token streams via `np.memmap` achieves extreme throughput and allows exact byte-offset tracking for fast, fault-tolerant resumption.
+- **The 31st-Bit Target Mask for SFT:** To avoid doubling disk footprint with parallel label arrays, `sft_data.py` uses bitwise masking. Assistant tokens are bitwise-ORed with `0x80000000` during preprocessing. The dataloader uses this flag to compute the `-100` CrossEntropy target on the fly, maintaining the identical high-performance binary structure from pretraining.
+- **Zero-Resizing Special Tokens:** The tokenizer patches standard ChatML boundaries (`<|im_start|>`, `<|im_end|>`) into unused dummy token slots (`100264`, `100265`) of the `cl100k_base` vocabulary. This preserves the exact vocab size (`100,277`), meaning the embedding matrix and language modeling head do not require resizing or surgical weight modifications for the SFT phase.
+- **Stateless Inference with ChatML:** The `chat.py` CLI uses strict ChatML boundaries without left-padding. We found that left-padding caused generation failures because positional embeddings were trained exclusively on right-padded sequences.
 
 <br>
 
 ## Current Limitations
 
-- Base model only (not instruction tuned)
 - Context length capped at 1024 tokens
 - Evaluation currently internal; broad external benchmarking is pending
 - Decoding quality still sensitive to prompt and sampling settings
@@ -189,11 +235,10 @@ model = AutoModelForCausalLM.from_pretrained(repo, trust_remote_code=True)
 
 ## Future Work
 
-- Add supervised instruction tuning stage
 - Expand benchmark reporting
 - Add longer-context variant
 - Add recursive variant
-- Improve inference ergonomics and packaging
+- Improve inference and packaging
 - Publish reproducible training/eval scripts for one-command replication
 
 <br>

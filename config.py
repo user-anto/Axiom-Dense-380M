@@ -76,3 +76,18 @@ class TrainConfig:
     
     # Reproducibility
     seed: int = 1337
+
+@dataclass
+class SFTConfig(TrainConfig):
+    dataset_paths: tuple = ("data/smol-smoltalk",)
+    ckpt_dir: str = "sft_checkpoints"
+    lr_start: float = 1.5e-4
+    lr: float = 3e-4
+    lr_min: float = 3e-5
+    warmup_fraction: float = 0.08
+    decay_fraction: float = 0.16
+    smoltalk_max_rows: int = 200_000
+    grad_accum_steps: int = 312
+    metrics_csv_path: str = "SFT_metrics.csv"
+    metrics_interval: int = 10
+    eval_interval: int = 10
