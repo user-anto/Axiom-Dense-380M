@@ -12,3 +12,4 @@ delete.py
 sft_upload.py
 hf_sft_export
 model-card
+space

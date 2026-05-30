@@ -15,11 +15,12 @@ Pretraining a 380M parameter Language Model on an RTX 4070
   <img src="https://img.shields.io/badge/Tokenizer-cl100k__base-green?style=for-the-badge" alt="Tokenizer">
 </p>
 
-<p align="center">
-  <a href="https://huggingface.co/user-anto/Axiom-Dense-380M-Base">https://huggingface.co/user-anto/Axiom-Dense-380M-Base</a>
-  <br>
-  <a href="https://huggingface.co/user-anto/Axiom-Dense-380M-Instruct">https://huggingface.co/user-anto/Axiom-Dense-380M-Instruct</a>
-</p>
+<div align="center">
+
+- <a href="https://huggingface.co/user-anto/Axiom-Dense-380M-Base">https://huggingface.co/user-anto/Axiom-Dense-380M-Base</a>
+- <a href="https://huggingface.co/user-anto/Axiom-Dense-380M-Instruct">https://huggingface.co/user-anto/Axiom-Dense-380M-Instruct</a>
+
+</div>
 
 <br>
 
@@ -31,7 +32,8 @@ This project is about building a language model from scratch, training it at sca
 
 - Decoder-only Transformer implementation in PyTorch
 - Deterministic packed-data pipeline for long training runs
-- Practical training loop with resume logic, checkpoint retention, eval tracking, and telemetry
+- Optimized training loop with resume logic, checkpoint retention, eval tracking, and telemetry
+- Supervised Fine-tuning on conversational data
 - Inference CLI and chat interface
 - Training visualization and experiment tracking workflow
 
@@ -109,9 +111,11 @@ Parameter count: **385,849,344**.
 # Pre-training Curves
 
 <p align="center">
-  <img src="./figures/loss.png" width="32%" alt="Pretraining Loss">
-  <img src="./figures/lr.png" width="32%" alt="Pretraining Learning Rate">
-  <img src="./figures/perplexity.png" width="32%" alt="Pretraining Perplexity">
+  <img src="./figures/loss.png" width="80%" alt="Pretraining Loss">
+  <br><br>
+  <img src="./figures/lr.png" width="80%" alt="Pretraining Learning Rate">
+  <br><br>
+  <img src="./figures/perplexity.png" width="80%" alt="Pretraining Perplexity">
 </p>
 
 ## Fine-tuning Snapshot
@@ -126,9 +130,11 @@ Parameter count: **385,849,344**.
 # Fine-tuning Curves
 
 <p align="center">
-  <img src="./figures/sft_loss.png" width="32%" alt="SFT Loss">
-  <img src="./figures/sft_lr.png" width="32%" alt="SFT Learning Rate">
-  <img src="./figures/sft_perplexity.png" width="32%" alt="SFT Perplexity">
+  <img src="./figures/sft_loss.png" width="80%" alt="SFT Loss">
+  <br><br>
+  <img src="./figures/sft_lr.png" width="80%" alt="SFT Learning Rate">
+  <br><br>
+  <img src="./figures/sft_perplexity.png" width="80%" alt="SFT Perplexity">
 </p>
 
 <br>
